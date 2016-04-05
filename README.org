@@ -1,0 +1,35 @@
+* API Blueprint Emacs major mode
+
+/This should one day be a full fleged emacs major mode for editing API
+Blueprint./
+
+~apib-mode~ is a major mode for editing API Blueprint in GNU Emacs. It
+is derived from markdown mode as API Blueprint is a special case of
+markdown. It adds couple of useful things when working with API
+Blueprint like getting parsing the API Blueprint and validating it.
+For this to work though you need to install the drafter exectubale
+first, please see [[https://github.com/apiaryio/drafter][drafter]] for more information.
+
+*Current status*:
+
+- Some extra highlighting (not much yet)
+- Buffer local compile command to navigate the warnings and errors
+- Some convenience functions for hooks
+
+** Installation
+
+#+BEGIN_SRC elisp
+(autoload 'apib-mode "apib-mode"
+        "Major mode for editing API Blueprint files" t)
+(add-to-list 'auto-mode-alist '("\\.apib\\'" . apib-mode))
+#+END_SRC
+
+
+** Usage
+
+It has all the features of markdown mode. Visit [[http://jblevins.org/projects/markdown-mode/][markdown-mode]] to see
+the details. To validate your API Blueprint or see the parse result
+just compile it using either M-x compile or your key binding for it.
+It also provides some convenience functions: ~apib-validate()~,
+~apib-valid-p()~ which can be used in a hook for example.
+
