@@ -112,7 +112,7 @@ with parsing output."
                    "drafter binary not found, please install it in your exec-path")
                   (nil))
          (concat apib-drafter-executable " -f json -u " buffer-file-name)))
-
+  (setq indent-tabs-mode nil)
   (eval-after-load "compilation"
     (progn
       (add-to-list 'compilation-error-regexp-alist-alist
