@@ -99,11 +99,27 @@ with parsing output."
   "apib"
   "API Blueprint major mode."
   :group 'apib-mode
+
   (font-lock-add-keywords
    nil
-   '(("\\(?:\\(?:\\+\\|\\-\\) +\\(?:Body\\|Headers?\\|Model\\|Parameters?\\|Re\\(?:quest\\|sponse\\)\\|Schema\\|Values\\)\\)"
+   '(("\\(?:\\(?:\\+\\|\\-\\) +\\(?:Body\\|Headers?\\|Model\\|Parameters?\\|Re\\(?:quest\\)\\|Schema\\|Values\\)\\)"
       0
-      font-lock-variable-name-face)))
+      font-lock-keyword-face)
+
+     ("\\(\\(?:\\+\\|\\-\\) +Response\\) +\\([0-9]\\{3\\}\\) +(\\(.+\\))"
+      (1 font-lock-keyword-face)
+      (2 font-lock-constant-face)
+      (3 font-lock-variable-name-face))
+
+     ("\\(\\(?:\\+\\|\\-\\) +Attributes\\) +(\\(.+\\))"
+      (1 font-lock-keyword-face)
+      (2 font-lock-variable-name-face))
+
+     ;; Property
+     ("^ *\\(?:\\+\\|\\-\\) +\\(.+?\\)\\(?:: +\\([^(\n]+\\)\\)?\\(?: +(\\(.*\\))\\)?\\(?: *- *.*\\)?$"
+       (1 font-lock-variable-name-face)
+       (2 font-lock-constant-face nil t)
+       (3 font-lock-keyword-face nil t))))
 
   (set (make-local-variable 'compile-command)
        (if (null apib-drafter-executable)
