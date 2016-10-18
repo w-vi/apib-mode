@@ -12,8 +12,9 @@ first, please see [[https://github.com/apiaryio/drafter][drafter]] for more info
 
 *Current status*:
 
-- Some extra highlighting (not much yet)
+- Extra highlighting
 - Buffer local compile command to navigate the warnings and errors
+- Functions to extract JSON and JSON Schema from the API Bleuprint
 - Some convenience functions for hooks
 
 ** Installation
@@ -31,5 +32,14 @@ It has all the features of markdown mode. Visit [[http://jblevins.org/projects/m
 the details. To validate your API Blueprint or see the parse result
 just compile it using either M-x compile or your key binding for it.
 It also provides some convenience functions: ~apib-validate()~,
-~apib-valid-p()~ which can be used in a hook for example.
+~apib-valid-p()~ which can be used in a hook for example,
+~apib-get-json()~ and ~apib-get-json-schema()~ to get all json or json
+schema assets in buffer called ~*apib-assets*~.
+
+*** Keybindings
+| Key       | Function             | Description                      |
+|-----------+----------------------+----------------------------------|
+| C-c C-x j | apib-get-json        | Print all generated JSON bodies  |
+| C-c C-x s | apib-get-json-schema | Print all generated JSON Schemas |
+
 

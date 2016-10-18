@@ -47,7 +47,13 @@
 ;; validate your API Blueprint or see the parse result just compile it
 ;; using either M-x compile or your key binding for compile.  It also
 ;; provides some convenience functions: apib-validate(),
-;; apib-valid-p() which can be used in a hook for example.
+;; apib-valid-p() which can be used in a hook for example,
+;; apib-get-json() and apib-get-json-schema() to get all json or json
+;; schema assets.
+
+;;; Keybindings
+;; C-c C-x j - calls apib-get-json()
+;; C-c C-x s - calls apib-get-json-schema()
 
 ;;; Code:
 
@@ -58,6 +64,12 @@
   "Location of the drafter API Blueprint parser executable."
   :group 'apib-mode
   :type 'file)
+
+(defconst-mode-local
+  apib-mode
+  apib-asset-buffer
+  "*apib-assets*"
+  "Name of the buffer to output json and json schema assets.")
 
 (defmacro with-drafter (&rest exp)
   "Helper verifying that drafter binary is present before it proceeds with EXP."
@@ -85,6 +97,83 @@ with parsing output."
              apib-drafter-executable buffer-file-name nil nil "-lu"))
        t nil)))
 
+
+(defun apib-refract-element-p (element type)
+  "Is refract ELEMENT of type TYPE?"
+  (if (string= (plist-get element :element) type) t nil))
+
+(defun apib-refract-mapc (func element)
+  "Mapc for refract. Iterates over the refract elements in
+ELEMENT calling FUNC on each of them. "
+  (while element
+    (funcall func element)
+    (when (vectorp element)
+        (mapc
+         (lambda (e)
+           (apib-refract-mapc func e))
+         element)
+        (setq element nil))
+    (setq element (plist-get element :content))))
+
+
+(defun apib-get-assets (content-type)
+  "Returns a list of content of all asset elements of content
+type CONTENT-TYPE in the current API Bleuprint buffer."
+  (let ((parse-result (apib--parse))
+        (result nil))
+    (when parse-result
+      (apib-refract-mapc
+       (lambda (e)
+         (when (apib-refract-element-p e "asset")
+           (when (string= content-type (plist-get
+                                        (plist-get e :attributes)
+                                        :contentType))
+             (push (plist-get e :content) result))))
+       parse-result))
+    result))
+
+
+(defun apib-print-assets (content-type)
+  "Utility function to print all the assets of type CONTENT-TYPE
+from current API Blueprin buffer."
+  (with-output-to-temp-buffer apib-asset-buffer
+    (mapc
+     (lambda (e)
+       (princ e)
+       (princ "\n\n"))
+     (apib-get-assets content-type))))
+
+
+(defun apib-get-json-schema ()
+  "Print JSON schema for all endpoints in the current API Bleuprint."
+  (interactive)
+  (apib-print-assets "application/schema+json"))
+
+
+(defun apib-get-json ()
+  "Print JSON schema for all endpoints in the current API Bleuprint."
+  (interactive)
+  (apib-print-assets "application/json"))
+
+
+(defun apib--parse()
+  "Return refract parse result of current API Blueprint in the buffer."
+  (with-drafter
+   (let ((json-object-type 'plist))
+     (let ((result (json-read-from-string
+                    (shell-command-to-string
+                     (concat
+                      apib-drafter-executable
+                      " -f json -u "
+                      buffer-file-name)))))
+     (if (apib-refract-element-p result "parseResult")
+         result
+       (progn (display-warning
+               'apib-mode
+               "Could not parse the document")
+              (nil)))))))
+
+
 (defun apib--error-filename ()
   "Find the buffer file name in the compilation output."
   ; Need to save matching data otherwise the matching groups are
@@ -93,6 +182,15 @@ with parsing output."
     (save-excursion
       (when (re-search-backward "^.*?drafter.+?\\(/.+\\)$" (point-min) t)
         (list (match-string 1))))))
+
+
+;;; Keybindings
+(defvar apib-mode-map nil "Keymap for `apib-mode'")
+(progn
+  (setq apib-mode-map (make-sparse-keymap))
+  (define-key apib-mode-map (kbd "C-c C-x j") 'apib-get-json)
+  (define-key apib-mode-map (kbd "C-c C-x s") 'apib-get-json-schema)
+  )
 
 ;;;###autoload
 (define-derived-mode apib-mode markdown-mode
@@ -106,20 +204,20 @@ with parsing output."
       0
       font-lock-keyword-face)
 
-     ("\\(\\(?:\\+\\|\\-\\) +Response\\) +\\([0-9]\\{3\\}\\) +(\\(.+\\))"
+     ("\\(\\(?:\\+\\|\\-\\) +Response\\) +\\([0-9]\\{3\\}\\)+(?\\(.*\\))?"
       (1 font-lock-keyword-face)
       (2 font-lock-constant-face)
       (3 font-lock-variable-name-face))
 
-     ("\\(\\(?:\\+\\|\\-\\) +Attributes\\) +(\\(.+\\))"
+     ("\\(\\(?:\\+\\|\\-\\) +Attributes\\)+(?\\(.*\\))?"
       (1 font-lock-keyword-face)
       (2 font-lock-variable-name-face))
 
      ;; Property
      ("^ *\\(?:\\+\\|\\-\\) +\\(.+?\\)\\(?:: +\\([^(\n]+\\)\\)?\\(?: +(\\(.*\\))\\)?\\(?: *- *.*\\)?$"
-       (1 font-lock-variable-name-face)
+       (1 nil)
        (2 font-lock-constant-face nil t)
-       (3 font-lock-keyword-face nil t))))
+       (3 font-lock-constant-face nil t))))
 
   (set (make-local-variable 'compile-command)
        (if (null apib-drafter-executable)
