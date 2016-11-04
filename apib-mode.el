@@ -74,10 +74,9 @@
 (defmacro apib-with-drafter (&rest exp)
   "Helper verifying that drafter binary is present before it proceeds with EXP."
   `(if (null apib-drafter-executable)
-       (progn (display-warning
-               'apib-mode
-               "drafter binary not found, please install it in your exec-path")
-              (nil))
+       (display-warning
+        'apib-mode
+        "drafter binary not found, please install it in your exec-path")
      (progn ,@exp)))
 
 (defun apib-validate ()
@@ -166,10 +165,10 @@ It takes the current API Bleuprint buffer as an input."
                       buffer-file-name)))))
      (if (apib-refract-element-p result "parseResult")
          result
-       (progn (display-warning
-               'apib-mode
-               "Could not parse the document")
-              (nil)))))))
+       (display-warning
+        'apib-mode
+        "Could not parse the document")
+       nil)))))
 
 
 (defun apib--error-filename ()
@@ -222,7 +221,7 @@ It takes the current API Bleuprint buffer as an input."
            (progn (display-warning
                    'apib-mode
                    "drafter binary not found, please install it in your exec-path")
-                  (nil))
+                  nil)
          (concat apib-drafter-executable " -f json -u " buffer-file-name)))
   (setq indent-tabs-mode nil)
   (eval-after-load "compilation"
