@@ -6,7 +6,7 @@
 ;; URL: http://github.com/w-vi/apib-mode
 ;; Package-Requires: ((emacs "24")(markdown-mode "2.1"))
 ;; Version: 0.3
-;; Keywords: API Blueprint
+;; Keywords: tools, api-blueprint
 
 ;; This file is not part of GNU Emacs.
 
@@ -71,7 +71,7 @@
   "*apib-assets*"
   "Name of the buffer to output json and json schema assets.")
 
-(defmacro with-drafter (&rest exp)
+(defmacro apib-with-drafter (&rest exp)
   "Helper verifying that drafter binary is present before it proceeds with EXP."
   `(if (null apib-drafter-executable)
        (progn (display-warning
@@ -85,14 +85,14 @@
 This actually runs drafter binary but only validates the file
 with parsing output."
   (interactive)
-  (with-drafter
+  (apib-with-drafter
    (set (make-local-variable 'compile-command)
         (concat apib-drafter-executable " -lu " buffer-file-name))
    (compile compile-command)))
 
 (defun apib-valid-p ()
-  "Validates the buffer and returns true if the buffer is valid."
-  (with-drafter
+  "Validate the buffer and return true if the buffer is valid."
+  (apib-with-drafter
    (if (= 0 (call-process
              apib-drafter-executable buffer-file-name nil nil "-lu"))
        t nil)))
@@ -103,8 +103,7 @@ with parsing output."
   (if (string= (plist-get element :element) type) t nil))
 
 (defun apib-refract-mapc (func element)
-  "Mapc for refract. Iterates over the refract elements in
-ELEMENT calling FUNC on each of them. "
+  "Call FUNC on each of the refract elements in ELEMENT."
   (while element
     (funcall func element)
     (when (vectorp element)
@@ -117,8 +116,8 @@ ELEMENT calling FUNC on each of them. "
 
 
 (defun apib-get-assets (content-type)
-  "Returns a list of content of all asset elements of content
-type CONTENT-TYPE in the current API Bleuprint buffer."
+  "Return list of content of all asset elements of content type
+CONTENT-TYPE in the current API Bleuprint buffer."
   (let ((parse-result (apib--parse))
         (result nil))
     (when parse-result
@@ -134,8 +133,7 @@ type CONTENT-TYPE in the current API Bleuprint buffer."
 
 
 (defun apib-print-assets (content-type)
-  "Utility function to print all the assets of type CONTENT-TYPE
-from current API Blueprin buffer."
+  "Print all the assets of type CONTENT-TYPE from current API Blueprint buffer."
   (with-output-to-temp-buffer apib-asset-buffer
     (mapc
      (lambda (e)
@@ -158,7 +156,7 @@ from current API Blueprin buffer."
 
 (defun apib--parse()
   "Return refract parse result of current API Blueprint in the buffer."
-  (with-drafter
+  (apib-with-drafter
    (let ((json-object-type 'plist))
      (let ((result (json-read-from-string
                     (shell-command-to-string
@@ -185,7 +183,7 @@ from current API Blueprin buffer."
 
 
 ;;; Keybindings
-(defvar apib-mode-map nil "Keymap for `apib-mode'")
+(defvar apib-mode-map nil "Keymap for `apib-mode'.")
 (progn
   (setq apib-mode-map (make-sparse-keymap))
   (define-key apib-mode-map (kbd "C-c C-x j") 'apib-get-json)
