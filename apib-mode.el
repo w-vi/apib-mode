@@ -65,11 +65,11 @@
   :group 'apib-mode
   :type 'file)
 
-(defconst-mode-local
-  apib-mode
-  apib-asset-buffer
+(defcustom apib-asset-buffer
   "*apib-assets*"
-  "Name of the buffer to output json and json schema assets.")
+  "Name of the buffer to output json and json schema assets."
+  :group 'apib-mode
+  :type 'string)
 
 (defmacro apib-with-drafter (&rest exp)
   "Helper verifying that drafter binary is present before it proceeds with EXP."
@@ -116,8 +116,8 @@ with parsing output."
 
 
 (defun apib-get-assets (content-type)
-  "Return list of content of all asset elements of content type
-CONTENT-TYPE in the current API Bleuprint buffer."
+  "Return list of content of all asset elements of CONTENT-TYPE.
+It takes the current API Bleuprint buffer as an input."
   (let ((parse-result (apib--parse))
         (result nil))
     (when parse-result
