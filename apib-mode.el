@@ -25,13 +25,12 @@
 
 ;;; Commentary:
 
-;; apib-mode is a major mode for editing API Blueprint in GNU Emacs.
-;; It is derived from markdown mode as apib is a special case of
-;; markdown.  It adds couple of usefull things when working with API
-;; Blueprint like getting parsing the API Blueprint and validating it.
-;; For this to work though you need to install the drafter exectubale
-;; first, please see https://github.com/apiaryio/drafter for more
-;; information
+;; apib-mode is a major mode for editing API Blueprint.  It is derived
+;; from markdown mode as apib is a special case of markdown.  It adds
+;; couple of usefull things when working with API Blueprint like
+;; getting parsing the API Blueprint and validating it.  For this to
+;; work though you need to install the drafter exectubale first,
+;; please see https://github.com/apiaryio/drafter for more information
 
 ;;; Installation:
 
@@ -44,23 +43,25 @@
 
 ;; It has all the features of markdown mode. Visit
 ;; http://jblevins.org/projects/markdown-mode/ to see the details. To
-;; validate your API Blueprint or see the parse result just compile it
-;; using either M-x compile or your key binding for compile.  It also
-;; provides some convenience functions: apib-validate(),
-;; apib-valid-p() which can be used in a hook for example,
+;; validate your API Blueprint or see the parse result just C-c C-x v
+;; or C-c C-x p respectively.  It also provides some convenience
+;; functions: apib-valid-p() which can be used in a hook for example,
 ;; apib-get-json() and apib-get-json-schema() to get all json or json
 ;; schema assets.
 
 ;;; Keybindings
+;; C-c C-x p - calls apib-parse()
+;; C-c C-x v - calls apib-validate()
 ;; C-c C-x j - calls apib-get-json()
 ;; C-c C-x s - calls apib-get-json-schema()
 
 ;;; Code:
-
 (require 'font-lock)
+(require 'compile)
+(require 'json)
 
 (defcustom apib-drafter-executable
-  (executable-find "drafter")
+  "drafter"
   "Location of the drafter API Blueprint parser executable."
   :group 'apib-mode
   :type 'file)
@@ -71,6 +72,12 @@
   :group 'apib-mode
   :type 'string)
 
+(defcustom apib-result-buffer
+  "*apib-parse-result*"
+  "Name of the buffer to output drafter parse result."
+  :group 'apib-mode
+  :type 'string)
+
 (defmacro apib-with-drafter (&rest exp)
   "Helper verifying that drafter binary is present before it proceeds with EXP."
   `(if (null apib-drafter-executable)
@@ -78,24 +85,6 @@
         'apib-mode
         "drafter binary not found, please install it in your exec-path")
      (progn ,@exp)))
-
-(defun apib-validate ()
-  "Validates the buffer.
-This actually runs drafter binary but only validates the file
-with parsing output."
-  (interactive)
-  (apib-with-drafter
-   (set (make-local-variable 'compile-command)
-        (concat apib-drafter-executable " -lu " buffer-file-name))
-   (compile compile-command)))
-
-(defun apib-valid-p ()
-  "Validate the buffer and return true if the buffer is valid."
-  (apib-with-drafter
-   (if (= 0 (call-process
-             apib-drafter-executable buffer-file-name nil nil "-lu"))
-       t nil)))
-
 
 (defun apib-refract-element-p (element type)
   "Is refract ELEMENT of type TYPE?"
@@ -117,7 +106,7 @@ with parsing output."
 (defun apib-get-assets (content-type)
   "Return list of content of all asset elements of CONTENT-TYPE.
 It takes the current API Bleuprint buffer as an input."
-  (let ((parse-result (apib--parse))
+  (let ((parse-result (apib-parse-to-plist buffer-file-name))
         (result nil))
     (when parse-result
       (apib-refract-mapc
@@ -141,20 +130,8 @@ It takes the current API Bleuprint buffer as an input."
      (apib-get-assets content-type))))
 
 
-(defun apib-get-json-schema ()
-  "Print JSON schema for all endpoints in the current API Bleuprint."
-  (interactive)
-  (apib-print-assets "application/schema+json"))
-
-
-(defun apib-get-json ()
-  "Print JSON schema for all endpoints in the current API Bleuprint."
-  (interactive)
-  (apib-print-assets "application/json"))
-
-
-(defun apib--parse()
-  "Return refract parse result of current API Blueprint in the buffer."
+(defun apib-parse-to-plist(filename)
+  "Return refract parse result of API Blueprint in the FILENAME as a plist."
   (apib-with-drafter
    (let ((json-object-type 'plist))
      (let ((result (json-read-from-string
@@ -162,7 +139,7 @@ It takes the current API Bleuprint buffer as an input."
                      (concat
                       apib-drafter-executable
                       " -f json -u "
-                      buffer-file-name)))))
+                      (shell-quote-argument filename))))))
      (if (apib-refract-element-p result "parseResult")
          result
        (display-warning
@@ -170,8 +147,64 @@ It takes the current API Bleuprint buffer as an input."
         "Could not parse the document")
        nil)))))
 
+(defun apib-compile-with-drafter (filename &rest args)
+  "Run drafter binary on FILENAME with ARGS and print the result to a temp buffer."
+  (apib-with-drafter
+   (with-output-to-temp-buffer apib-result-buffer
+     (princ (format "%s\n" (mapconcat
+                            'identity
+                            `(,apib-drafter-executable
+                              ,@args
+                              ,filename)
+                            " ")))
+     (apply 'call-process
+      `(,apib-drafter-executable
+        nil
+        ,apib-result-buffer
+        t
+        ,@args
+        ,filename))))
+  (with-current-buffer apib-result-buffer
+    (funcall 'compilation-mode)))
 
-(defun apib--error-filename ()
+;; Interactive functions
+
+(defun apib-validate ()
+  "Validates the buffer.
+This actually runs drafter binary but only validates the file
+without printing the parsing output."
+  (interactive)
+  (apib-compile-with-drafter buffer-file-name "-lu"))
+
+
+(defun apib-valid-p ()
+  "Validate the buffer and return true if the buffer is valid."
+  (interactive)
+  (apib-with-drafter
+   (if (= 0 (call-process
+             apib-drafter-executable buffer-file-name nil nil "-lu"))
+       t nil)))
+
+
+(defun apib-get-json-schema ()
+  "Print JSON schema for all endpoints in the current API Bleuprint."
+  (interactive)
+  (apib-print-assets "application/schema+json"))
+
+
+(defun apib-get-json ()
+  "Print JSON asset for all endpoints in the current API Bleuprint."
+  (interactive)
+  (apib-print-assets "application/json"))
+
+
+(defun apib-parse ()
+  "Parse and print current API Blueprint buffer."
+  (interactive)
+  (apib-compile-with-drafter buffer-file-name "-f" "json" "-u"))
+
+
+(defun apib-error-filename ()
   "Find the buffer file name in the compilation output."
   ; Need to save matching data otherwise the matching groups are
   ; screwed, basically everything needs to be saved.
@@ -180,24 +213,8 @@ It takes the current API Bleuprint buffer as an input."
       (when (re-search-backward "^.*?drafter.+?\\(/.+\\)$" (point-min) t)
         (list (match-string 1))))))
 
-
-;;; Keybindings
-(defvar apib-mode-map nil "Keymap for `apib-mode'.")
-(progn
-  (setq apib-mode-map (make-sparse-keymap))
-  (define-key apib-mode-map (kbd "C-c C-x j") 'apib-get-json)
-  (define-key apib-mode-map (kbd "C-c C-x s") 'apib-get-json-schema)
-  )
-
-;;;###autoload
-(define-derived-mode apib-mode markdown-mode
-  "apib"
-  "API Blueprint major mode."
-  :group 'apib-mode
-
-  (font-lock-add-keywords
-   nil
-   '(("\\(?:\\(?:\\+\\|\\-\\) +\\(?:Body\\|Headers?\\|Model\\|Parameters?\\|Re\\(?:quest\\)\\|Schema\\|Values\\)\\)"
+(defconst apib-mode-font-lock-keywords
+  '(("\\(?:\\(?:\\+\\|\\-\\) +\\(?:Body\\|Headers?\\|Model\\|Parameters?\\|Re\\(?:quest\\)\\|Schema\\|Values\\)\\)"
       0
       font-lock-keyword-face)
 
@@ -214,23 +231,40 @@ It takes the current API Bleuprint buffer as an input."
      ("^ *\\(?:\\+\\|\\-\\) +\\(.+?\\)\\(?:: +\\([^(\n]+\\)\\)?\\(?: +(\\(.*\\))\\)?\\(?: *- *.*\\)?$"
        (1 nil)
        (2 font-lock-constant-face nil t)
-       (3 font-lock-constant-face nil t))))
+       (3 font-lock-constant-face nil t)))
+  "API Blueprint keywords.")
 
-  (set (make-local-variable 'compile-command)
-       (if (null apib-drafter-executable)
-           (progn (display-warning
-                   'apib-mode
-                   "drafter binary not found, please install it in your exec-path")
-                  nil)
-         (concat apib-drafter-executable " -f json -u " buffer-file-name)))
-  (setq indent-tabs-mode nil)
-  (eval-after-load "compilation"
-    (progn
-      (add-to-list 'compilation-error-regexp-alist-alist
-                   '(apib
-                     "^\\(?:warning\\|error\\):.+?line \\([0-9]+\\), column \\([0-9]+\\) - line \\([0-9]+\\), column \\([0-9]+\\).*$"
-                     apib--error-filename 3 4))
-      (add-to-list 'compilation-error-regexp-alist
-                   'apib))))
+;;; Keybindings
+(defvar apib-mode-map nil "Keymap for `apib-mode'.")
+(progn
+  (setq apib-mode-map (make-sparse-keymap))
+  (define-key apib-mode-map (kbd "C-c C-x p") 'apib-parse)
+  (define-key apib-mode-map (kbd "C-c C-x v") 'apib-validate)
+  (define-key apib-mode-map (kbd "C-c C-x j") 'apib-get-json)
+  (define-key apib-mode-map (kbd "C-c C-x s") 'apib-get-json-schema))
+
+
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(apib
+               "^\\(?:warning\\|error\\):.+?line \\([0-9]+\\), column \\([0-9]+\\) - line \\([0-9]+\\), column \\([0-9]+\\).*$"
+               apib-error-filename 3 4))
+(add-to-list 'compilation-error-regexp-alist 'apib)
+
+;;;###autoload
+(define-derived-mode apib-mode markdown-mode
+  "apib"
+  "API Blueprint major mode."
+  :group 'apib-mode
+
+  (let ((drafter (executable-find apib-drafter-executable)))
+    (when (null drafter)
+      (display-warning
+       'apib-mode
+       "drafter binary not found, please install it in your exec-path"))
+    (setq apib-drafter-executable drafter))
+
+  (font-lock-add-keywords nil apib-mode-font-lock-keywords)
+  (setq indent-tabs-mode nil))
+
 (provide 'apib-mode)
 ;;; apib-mode.el ends here
