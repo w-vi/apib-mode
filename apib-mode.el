@@ -59,6 +59,7 @@
 (require 'font-lock)
 (require 'compile)
 (require 'json)
+(require 'markdown-mode)
 
 (defcustom apib-drafter-executable
   "drafter"
