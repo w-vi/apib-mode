@@ -15,4 +15,4 @@ before_install:
   - cd drafter && ./configure && make && sudo make install && cd ..
 
 script:
-  - emacs -batch -L . -l apib-mode-test.el -f ert-run-tests-batch-and-exit
+  - make
