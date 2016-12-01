@@ -61,22 +61,29 @@
 (require 'json)
 (require 'markdown-mode)
 
+(defgroup api-blueprint nil
+  "Major mode for editing API Blueprint files."
+  :prefix "apib-"
+  :group 'wp
+  :link '(url-link "https://github.com/w-vi/apib-mode/"))
+
+
 (defcustom apib-drafter-executable
   "drafter"
   "Location of the drafter API Blueprint parser executable."
-  :group 'apib-mode
+  :group 'api-blueprint
   :type 'file)
 
 (defcustom apib-asset-buffer
   "*apib-assets*"
   "Name of the buffer to output json and json schema assets."
-  :group 'apib-mode
+  :group 'api-blueprint
   :type 'string)
 
 (defcustom apib-result-buffer
   "*apib-parse-result*"
   "Name of the buffer to output drafter parse result."
-  :group 'apib-mode
+  :group 'api-blueprint
   :type 'string)
 
 (defmacro apib-with-drafter (&rest exp)
@@ -252,7 +259,7 @@ without printing the parsing output."
 (add-to-list 'compilation-error-regexp-alist 'apib)
 
 ;;;###autoload
-(define-derived-mode apib-mode markdown-mode
+(define-derived-mode apib-mode markdown-mode "API Blueprint"
   "apib"
   "API Blueprint major mode."
   :group 'apib-mode
