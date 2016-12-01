@@ -39,7 +39,9 @@
     (should
      (string-equal
       (json-encode (json-read-from-string (buffer-string)))
-      "{\"id\":6161,\"user\":\"wvi\",\"active\":false,\"social\":{\"github\":{\"active\":true,\"id\":1234,\"uri\":\"wvi\"}}}"))))
+      (json-encode
+       (json-read-from-string
+        "{\"id\":6161,\"user\":\"wvi\",\"active\":false,\"social\":{\"github\":{\"active\":true,\"id\":1234,\"uri\":\"wvi\"}}}"))))))
 
 
 (ert-deftest apib-test-json-schema ()
@@ -50,4 +52,7 @@
     (should
      (string-equal
       (json-encode (json-read-from-string (buffer-string)))
-      "{\"$schema\":\"http://json-schema.org/draft-04/schema#\",\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"number\"},\"user\":{\"type\":\"string\"},\"active\":{\"type\":\"boolean\"},\"social\":{\"type\":\"object\",\"properties\":{\"github\":{\"type\":\"object\",\"properties\":{\"active\":{\"type\":\"boolean\"},\"id\":{\"type\":\"number\"},\"uri\":{\"type\":\"string\"}}}}}}}"))))
+      (json-encode
+       (json-read-from-string
+        "{\"$schema\":\"http://json-schema.org/draft-04/schema#\",\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"number\"},\"user\":{\"type\":\"string\"},\"active\":{\"type\":\"boolean\"},\"social\":{\"type\":\"object\",\"properties\":{\"github\":{\"type\":\"object\",\"properties\":{\"active\":{\"type\":\"boolean\"},\"id\":{\"type\":\"number\"},\"uri\":{\"type\":\"string\"}}}}}}}"))))))
+
