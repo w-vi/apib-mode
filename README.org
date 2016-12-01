@@ -1,5 +1,7 @@
 * API Blueprint Emacs major mode
 
+[[https://travis-ci.org/w-vi/apib-mode][https://travis-ci.org/w-vi/apib-mode.svg?branch=master]]
+
 /This should one day be a full fleged emacs major mode for editing API
 Blueprint./
 
