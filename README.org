@@ -2,24 +2,31 @@
 
 [[https://travis-ci.org/w-vi/apib-mode][https://travis-ci.org/w-vi/apib-mode.svg?branch=master]]
 
-/This should one day be a full fleged emacs major mode for editing API
+/This should one day be a full fledged Emacs major mode for editing API
 Blueprint./
 
 ~apib-mode~ is a major mode for editing API Blueprint in Emacs. It
 is derived from markdown mode as API Blueprint is a special case of
 markdown. It adds couple of useful things when working with API
 Blueprint like getting parsing the API Blueprint and validating it.
-For this to work though you need to install the drafter exectubale
+For this to work though you need to install the drafter executable
 first, please see [[https://github.com/apiaryio/drafter][drafter]] for more information.
 
 *Current status*:
 
 - Extra highlighting
 - Parse and validation functions
-- Functions to extract JSON and JSON Schema from the API Bleuprint
+- Functions to extract JSON and JSON Schema from the API Blueprint
 - Some convenience functions for hooks
 
 ** Installation
+
+~apib-mode~ is available on [[https://melpa.org/][Melpa]]:
+
+~M-x package-install apib-mode~
+
+or just download it and put somewhere in your load path.
+
 
 #+BEGIN_SRC elisp
 (autoload 'apib-mode "apib-mode"
