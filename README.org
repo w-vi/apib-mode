@@ -18,6 +18,8 @@ first, please see [[https://github.com/apiaryio/drafter][drafter]] for more info
 - Parse and validation functions
 - Functions to extract JSON and JSON Schema from the API Blueprint
 - Some convenience functions for hooks
+- Tested on Emacs 24, 25 and 26
+
 
 ** Installation
 

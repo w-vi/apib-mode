@@ -3,6 +3,7 @@ EMACS ?= emacs
 all: update compile test
 
 update:
+	$(EMACS) --version
 	$(EMACS) -batch -l util/install-deps.el
 
 compile:
