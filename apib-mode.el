@@ -4,7 +4,7 @@
 
 ;; Author: Vilibald Wanča <vilibald@wvi.cz>
 ;; URL: http://github.com/w-vi/apib-mode
-;; Package-Requires: ((emacs "24")(markdown-mode "2.1"))
+;; Package-Requires: ((markdown-mode "2.1"))
 ;; Version: 0.4
 ;; Keywords: tools, api-blueprint
 
