@@ -1,6 +1,6 @@
 ;;; apib-mode.el --- Major mode for API Blueprint files -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016 Vilibald Wanča <vilibald@wvi.cz>
+;; Copyright (C) 2016, 2020 Vilibald Wanča <vilibald@wvi.cz>
 
 ;; Author: Vilibald Wanča <vilibald@wvi.cz>
 ;; URL: http://github.com/w-vi/apib-mode
@@ -120,9 +120,9 @@ It takes the current API Bleuprint buffer as an input."
       (apib-refract-mapc
        (lambda (e)
          (when (apib-refract-element-p e "asset")
-           (when (string= content-type (plist-get
+           (when (string= content-type (plist-get (plist-get
                                         (plist-get e :attributes)
-                                        :contentType))
+                                        :contentType) :content))
              (push (plist-get e :content) result))))
        parse-result))
     result))
